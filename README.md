@@ -1,12 +1,11 @@
-## LIME-FOLD 算法复现（Heart Disease 数据集）
+## Reproduction of the LIME-FOLD Algorithm (Heart Disease Dataset)
 
-本项目复现 AAAI-19 论文  
+This project reproduce the AAAI-19 paper. 
 **“Induction of Non-Monotonic Logic Programs to Explain Boosted Tree Models Using LIME”**  
-在 UCI Heart Disease (Cleveland) 数据集上的 LIME‑FOLD 实验流程与结果（表 1 中的 heart 行）。
-
+The LIME-FOLD experimental procedure and results on the UCI Heart Disease (Cleveland) dataset (heart row in Table 1).
 ---
 
-## 项目结构
+## program structure
 
 - **`src/`**：源码
   - **`data_processing/`**
