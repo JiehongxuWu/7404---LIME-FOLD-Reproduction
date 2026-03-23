@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-import matplotlib.pyplot as plt
+import json
 from pathlib import Path
 from sklearn.impute import SimpleImputer
 from ucimlrepo import fetch_ucirepo
@@ -122,49 +122,21 @@ MODELS_DIR.mkdir(parents=True, exist_ok=True)
 X_final.to_csv(DATA_PROCESSED_DIR / "X_final.csv", index=False)
 pd.Series(y_binary, name="y_binary").to_csv(DATA_PROCESSED_DIR / "y_binary.csv", index=False)
 model.save_model(str(MODELS_DIR / "xgb_model.json"))
+# dataset-scoped outputs for multi-dataset pipeline
+X_final.to_csv(DATA_PROCESSED_DIR / "heart_X_final.csv", index=False)
+pd.Series(y_binary, name="y_binary").to_csv(DATA_PROCESSED_DIR / "heart_y_binary.csv", index=False)
+model.save_model(str(MODELS_DIR / "heart_xgb_model.json"))
+with (MODELS_DIR / "heart_feature_meta.json").open("w", encoding="utf-8") as f:
+    json.dump(
+        {
+            "dataset_name": "heart",
+            "interval_features": X_numeric_discrete.columns.tolist(),
+            "target_predicate": "heart_disease",
+        },
+        f,
+        ensure_ascii=False,
+        indent=2,
+    )
 
 
-score_dict = model.get_booster().get_score(importance_type='weight')
-model_feature_names = model.get_booster().feature_names
-
-
-
-importance_dict = {}
-for key, value in score_dict.items():
-    if key.startswith('f') and key[1:].isdigit():
-        idx = int(key[1:])
-        feat_name = model_feature_names[idx]
-    else:
-        feat_name = key
-    importance_dict[feat_name] = value
-
-
-total = sum(importance_dict.values())
-relative_importance = {k: v / total for k, v in importance_dict.items()}
-
-
-sorted_items = sorted(relative_importance.items(), key=lambda x: x[1], reverse=True)
-sorted_names = [item[0] for item in sorted_items]
-sorted_values = [item[1] for item in sorted_items]
-
-
-plt.figure(figsize=(12, 10))
-bars = plt.barh(range(len(sorted_values)), sorted_values, align='center')
-plt.yticks(range(len(sorted_values)), sorted_names)
-plt.xlabel('Relative Importance (Percentage)')
-plt.title('XGBoost Feature Relative Importance (Cleveland Dataset)')
-plt.gca().invert_yaxis()
-
-
-for i, (bar, val) in enumerate(zip(bars, sorted_values)):
-    plt.text(bar.get_width() + 0.005, bar.get_y() + bar.get_height()/2,
-             f'{val:.2%}', va='center', ha='left', fontsize=9)
-
-plt.tight_layout()
-# Save figure for reporting (Step1 output)
-FIGURES_DIR = PROJECT_ROOT / "results" / "figures"
-FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-fig_path = FIGURES_DIR / "xgb_feature_importance.png"
-plt.savefig(fig_path, dpi=150)
-plt.show()
-print(f"Step1 图已保存到: {fig_path}")
+print("Step1 已完成（不再生成 Figure 3 特征重要性图）。")

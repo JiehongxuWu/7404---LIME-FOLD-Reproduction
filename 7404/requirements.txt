@@ -1,9 +1,13 @@
-pandas
-numpy
-xgboost
-scikit-learn
-lime
-matplotlib
-seaborn
-ucimlrepo
-mdlp
+# Python >=3.8 recommended (tested on 3.8)
+# pip install -r requirements.txt
+
+pandas>=1.3.0,<2.1.0
+numpy>=1.19.0,<2.0.0
+xgboost>=1.6.0,<2.1.0
+scikit-learn>=1.0.0,<1.4.0
+lime>=0.2.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+ucimlrepo>=0.0.3
+
+# MDLP 离散化在 src/data_processing/mdlp_discretizer.py 中自实现，无需额外 mdlp 包

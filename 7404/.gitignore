@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# 数据与中间产物（保留目录占位）
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# 实验输出（模型、图、日志；如需提交示例图可改为白名单）
+results/figures/*
+results/models/*
+results/logs/*
+!results/.gitkeep
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# IDE / 编辑器
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+Thumbs.db
+.DS_Store
+
+# 临时与备份
+*.tmp
+*.log
+*.bak
+~$*

@@ -1,4 +1,5 @@
 import pickle
+import json
 from pathlib import Path
 
 import lime
@@ -13,20 +14,47 @@ DATA_PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 MODELS_DIR = PROJECT_ROOT / "results" / "models"
 DEFAULT_EXPLANATIONS_PATH = MODELS_DIR / "lime_explanations.pkl"
 
+def get_dataset_paths(dataset_name: str):
+    dataset_name = str(dataset_name).strip().lower()
+    return {
+        "X_final": DATA_PROCESSED_DIR / f"{dataset_name}_X_final.csv",
+        "y_binary": DATA_PROCESSED_DIR / f"{dataset_name}_y_binary.csv",
+        "model": MODELS_DIR / f"{dataset_name}_xgb_model.json",
+        "explanations": MODELS_DIR / f"{dataset_name}_lime_explanations.pkl",
+        "feature_meta": MODELS_DIR / f"{dataset_name}_feature_meta.json",
+    }
 
-def load_step1_outputs():
+
+def load_step1_outputs(dataset_name: str = "heart"):
     """从 CSV / JSON 加载 Step1 产物：X_final, y_binary, model, feature_names"""
-    X_final = pd.read_csv(DATA_PROCESSED_DIR / "X_final.csv")
-    y_binary = pd.read_csv(DATA_PROCESSED_DIR / "y_binary.csv")["y_binary"]
+    paths = get_dataset_paths(dataset_name)
+
+    X_path = paths["X_final"] if paths["X_final"].exists() else DATA_PROCESSED_DIR / "X_final.csv"
+    y_path = paths["y_binary"] if paths["y_binary"].exists() else DATA_PROCESSED_DIR / "y_binary.csv"
+    model_path = paths["model"] if paths["model"].exists() else MODELS_DIR / "xgb_model.json"
+
+    X_final = pd.read_csv(X_path)
+    y_binary = pd.read_csv(y_path)["y_binary"]
 
     model = xgb.XGBClassifier()
-    model.load_model(str(MODELS_DIR / "xgb_model.json"))
+    model.load_model(str(model_path))
 
     feature_names = X_final.columns.tolist()
-    return X_final, y_binary, model, feature_names
+    feature_meta = {}
+    if paths["feature_meta"].exists():
+        with paths["feature_meta"].open("r", encoding="utf-8") as f:
+            feature_meta = json.load(f)
+    return X_final, y_binary, model, feature_names, feature_meta
 
 
-def generate_lime_explanations(X_final, y_binary, model, feature_names, output_file: Path = DEFAULT_EXPLANATIONS_PATH):
+def generate_lime_explanations(
+    X_final,
+    y_binary,
+    model,
+    feature_names,
+    output_file: Path = DEFAULT_EXPLANATIONS_PATH,
+    num_features: int = 5,
+):
     """
     为每个样本生成LIME解释（对应论文 Algorithm 4 前半部分：LIME 生成 transformed dataset）
     """
@@ -64,7 +92,7 @@ def generate_lime_explanations(X_final, y_binary, model, feature_names, output_f
         exp = explainer.explain_instance(
             x_row,
             model.predict_proba,
-            num_features=5,  # 选择 top-5 特征
+            num_features=num_features,
             num_samples=5000,
         )
 
@@ -98,6 +126,6 @@ def generate_lime_explanations(X_final, y_binary, model, feature_names, output_f
 
 
 if __name__ == "__main__":
-    X_final, y_binary, model, feature_names = load_step1_outputs()
+    X_final, y_binary, model, feature_names, _ = load_step1_outputs("heart")
     explanations = generate_lime_explanations(X_final, y_binary, model, feature_names)
     print(f"生成了 {len(explanations)} 个 LIME 解释，已保存到 {DEFAULT_EXPLANATIONS_PATH}")

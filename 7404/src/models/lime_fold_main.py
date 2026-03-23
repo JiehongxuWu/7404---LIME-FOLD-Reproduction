@@ -32,7 +32,7 @@ def _literal_from_feature_value(feature_name: str, value, is_binary: bool, is_in
     return f"{feature_name}={value}"
 
 
-def transform_dataset_with_lime(explanations, X_final):
+def transform_dataset_with_lime(explanations, X_final, interval_feature_names=None):
     """
     用LIME解释转换数据集（论文Algorithm 4）
     """
@@ -41,8 +41,11 @@ def transform_dataset_with_lime(explanations, X_final):
     E_minus = []  # 负例
 
     feature_names = X_final.columns.tolist()
-    # Step1 里 X_final = [离散数值列(4个) + one-hot 列]，因此前 4 列为 interval features
-    interval_features = set(feature_names[:4])
+    if interval_feature_names:
+        interval_features = set(interval_feature_names)
+    else:
+        # backward-compatible fallback for heart pipeline
+        interval_features = set(feature_names[:4])
     # 判断哪些列是真正二值（one-hot）特征：unique ⊆ {0,1}
     binary_cols = set()
     for col in feature_names:
@@ -118,6 +121,9 @@ def run_lime_fold_experiment(
     X_final,
     y_binary,
     explanations,
+    interval_feature_names=None,
+    target_predicate: str = "target",
+    dataset_name: str = "dataset",
     test_size=0.3,
     use_cross_validation: bool = True,
     n_splits: int = 5,
@@ -127,7 +133,11 @@ def run_lime_fold_experiment(
     运行LIME-FOLD实验，与论文表1对比
     """
     # Algorithm 4: 先对全体样本做 transformed dataset
-    bk_all, E_plus_all, E_minus_all = transform_dataset_with_lime(explanations, X_final)
+    bk_all, E_plus_all, E_minus_all = transform_dataset_with_lime(
+        explanations,
+        X_final,
+        interval_feature_names=interval_feature_names,
+    )
 
     def _eval_on_ids(fold_model: FOLD, ids):
         y_pred_local = []
@@ -169,7 +179,7 @@ def run_lime_fold_experiment(
 
             print(f"\n训练FOLD模型... (fold {fold_i}/{n_splits})")
             fold_model = FOLD(max_rule_length=5)
-            fold_model.fit("heart_disease", E_plus_train, E_minus_train, bk_train)
+            fold_model.fit(target_predicate, E_plus_train, E_minus_train, bk_train)
             fold_models.append(fold_model)
 
             precision, recall, accuracy, f1 = _eval_on_ids(fold_model, test_ids)
@@ -222,7 +232,7 @@ def run_lime_fold_experiment(
 
         print("训练FOLD模型...")
         fold_model = FOLD(max_rule_length=5)
-        fold_model.fit("heart_disease", E_plus_train, E_minus_train, bk_train)
+        fold_model.fit(target_predicate, E_plus_train, E_minus_train, bk_train)
 
         print("\n" + "=" * 50)
         print("LIME-FOLD学习到的规则：")
@@ -242,23 +252,22 @@ def run_lime_fold_experiment(
         print(f"F1 Score: {f1:.4f}")
         print(f"规则数量: {num_rules}")
 
-    # 与论文结果对比（Table 1: heart）
-    print("\n" + "=" * 50)
-    print("论文表1结果 (Heart数据集)：")
-    print("=" * 50)
-    paper_results = {
-        "ALEPH": {"Precision": 0.76, "Recall": 0.75, "Accuracy": 0.78, "F1": 0.75},
-        "ALEPH+LIME": {"Precision": 0.79, "Recall": 0.70, "Accuracy": 0.79, "F1": 0.74},
-        "FOLD+LIME": {"Precision": 0.82, "Recall": 0.74, "Accuracy": 0.82, "F1": 0.78},
-    }
-
-    for method, metrics in paper_results.items():
-        print(
-            f"{method:12s}: Precision={metrics['Precision']:.2f}, "
-            f"Recall={metrics['Recall']:.2f}, "
-            f"Accuracy={metrics['Accuracy']:.2f}, "
-            f"F1={metrics['F1']:.2f}"
-        )
+    if str(dataset_name).lower() == "heart":
+        print("\n" + "=" * 50)
+        print("论文表1结果 (Heart数据集)：")
+        print("=" * 50)
+        paper_results = {
+            "ALEPH": {"Precision": 0.76, "Recall": 0.75, "Accuracy": 0.78, "F1": 0.75},
+            "ALEPH+LIME": {"Precision": 0.79, "Recall": 0.70, "Accuracy": 0.79, "F1": 0.74},
+            "FOLD+LIME": {"Precision": 0.82, "Recall": 0.74, "Accuracy": 0.82, "F1": 0.78},
+        }
+        for method, metrics in paper_results.items():
+            print(
+                f"{method:12s}: Precision={metrics['Precision']:.2f}, "
+                f"Recall={metrics['Recall']:.2f}, "
+                f"Accuracy={metrics['Accuracy']:.2f}, "
+                f"F1={metrics['F1']:.2f}"
+            )
 
     out = {
         "precision": precision,
