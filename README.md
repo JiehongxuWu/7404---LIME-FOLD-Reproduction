@@ -7,7 +7,7 @@ The LIME-FOLD experimental procedure and results on the UCI Heart Disease (Cleve
 
 ## program structure
 
-- **`src/`**：源码
+- **`src/`**：Source code
   - **`data_processing/`**
     - `heart_preprocessing.py`：Step 1，Download UCI heart data、preprocessing、MDLP discretization、training XGBoost，then：
       - `data/processed/X_final.csv`
