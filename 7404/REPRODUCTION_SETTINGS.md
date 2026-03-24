@@ -1,67 +1,67 @@
-# 复现设置（Reproduction Settings）
+# Reproduction Settings
 
-本文档归纳本仓库在复现 AAAI-19 论文 *LIME-FOLD* 时的**数据、评估指标、运行环境、关键实现与训练细节**，便于报告撰写与审阅。
+This document summarizes the **data, evaluation metrics, operating environment, key implementation and training details** of this repository when reproducing the AAAI-19 paper *LIME-FOLD*, to facilitate report writing and review.
 
 ---
 
-## 1. 数据（Data）
+## 1. Data
 
 ### 1.1 Heart Disease（Cleveland）
 
-- **来源**：UCI，`ucimlrepo.fetch_ucirepo(id=45)`  
-- **任务**：二分类，标签 `y_binary = (num > 0)`（是否患病）。  
-- **特征**：数值列经 **MDLP 离散化** 后与前 4 列作为 interval；分类列 one-hot，列名语义化（如 `chest_pain_4`, `thal_7`）。  
-- **产物前缀**：`heart_*`（如 `heart_X_final.csv`, `heart_xgb_model.json`）。
+- **Source**：UCI，`ucimlrepo.fetch_ucirepo(id=45)`  
+- **Task**: Binary classification, label `y_binary = (num > 0)` (whether or not the disease is present). 
+- **Feature**：Numerical columns are **discretized using MDLP** and then used as an interval with the first 4 columns; categorical columns are one-hot encoded with semantic column names (e.g., `chest_pain_4`, `thal_7`).
+- **Object prefix**：`heart_*`（如 `heart_X_final.csv`, `heart_xgb_model.json`）。
 
 ### 1.2 Wine
 
-- **来源**：UCI id=109，[Wine](https://archive.ics.uci.edu/dataset/109/wine)。  
-- **任务**：原数据为 **3 类**；本仓库实现为 **二分类**：**是否属于 class 1**（`class == 1` 为正类）。  
-  - 与论文中对该数据集的 **多类** 设定**不一致**，因此 **F1 / 规则数不宜与论文 Table 1 直接等同对比**，需在报告中单独说明。  
-- **产物前缀**：`wine_*`。
+- **Source**：UCI id=109，[Wine](https://archive.ics.uci.edu/dataset/109/wine)。  
+- **Taske**：The original data was in **3 categories**; this repository implements it as **binary classification**: **whether it belongs to class 1** (`class == 1` is a positive class).
+  - This is inconsistent with the **multi-class** specification of the dataset in the paper, therefore the **F1 score** is incorrect.
+- **Object prefix**：`wine_*`.
 
 ### 1.3 Congressional Voting Records
 
-- **来源**：UCI id=105，[Congressional Voting Records](https://archive.ics.uci.edu/dataset/105/congressional+voting+records)。  
-- **任务**：二分类，**Republican = 1**，**Democrat = 0**。  
-- **缺失**：投票列中 `?` 映射为字符串 `missing` 后参与 one-hot。  
-- **产物前缀**：`voting_*`。
+- **Source**：UCI id=105，[Congressional Voting Records](https://archive.ics.uci.edu/dataset/105/congressional+voting+records).
+- **Task**：Binary classification, **Republican = 1**, **Democrat = 0**.
+- **Lose**：In the voting column, `?` is mapped to the string `missing` and then participates in one-hot encoding.  
+- **Object prefix**：`voting_*`.
 
-### 1.4 数据落盘位置
+### 1.4 Data storage location
 
-- 预处理：`data/processed/{dataset}_X_final.csv`, `{dataset}_y_binary.csv`  
-- 元信息：`results/models/{dataset}_feature_meta.json`（含 `interval_features`、`target_predicate`）
+- Preprocessing：`data/processed/{dataset}_X_final.csv`, `{dataset}_y_binary.csv`  
+- Meta information：`results/models/{dataset}_feature_meta.json`（include `interval_features`、`target_predicate`）
 
 ---
 
-## 2. 评估指标（Metrics）
+## 2. Evaluation Metrics
 
-与论文实验部分一致，对 **LIME-FOLD 学到的规则** 在测试折上计算：
+Consistent with the experimental section of the paper, the rules learned by **LIME-FOLD** are calculated on the test fold:
 
-| 指标 | 说明 |
+| Metrics | Description |
 |------|------|
-| **Precision** | 正类（预测为 1）的精确率 |
-| **Recall** | 正类召回率 |
-| **Accuracy** | 准确率 |
-| **F1** | 正类 F1 |
-| **Avg. number of rules** | 每折 **default + abnormal** 规则数之和，再对 5 折取平均 |
+| **Precision** | Precision for the positive class (predicted as 1) |
+| **Recall** | Recall for the positive class |
+| **Accuracy** | Accuracy |
+| **F1** | F1 score for the positive class |
+| **Avg. number of rules** | he sum of the number of **default + abnormal** rules per 5-fold division, then averaged|
 
-**划分方式**：`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`。
+**Division method**：`StratifiedKFold(n_splits=5, shuffle=True, random_state=42)`。
 
-**注意**：图中 **ALEPH / ALEPH+LIME / FOLD+LIME** 的数值来自**论文 Table 1 / Figure 2**，并非在本机运行 Aleph；**Your Result** 为本项目流水线输出。
+**Warning**：The values ​​for **ALEPH / ALEPH+LIME / FOLD+LIME** in the figure are from **Table 1 / Figure 2 of the paper**, and are not from running Aleph on the local computer; **Your Result** is the pipeline output of this project.
 
 ---
 
-## 3. 环境（Environment）
+## 3. Environment
 
 | 项目 | 说明 |
 |------|------|
-| **OS** | Windows 10（亦可在 Linux/macOS 上运行） |
-| **Python** | 建议 **3.8+**（仓库在 3.8.0 下使用） |
-| **虚拟环境** | 推荐项目根目录 `.venv/` |
-| **依赖** | 见 `requirements.txt`（pandas, numpy, xgboost, scikit-learn, lime, matplotlib, seaborn, ucimlrepo） |
+| **OS** | Windows 10(Also runs on Linux/macOS)|
+| **Python** | Recommended **3.8+** (Repository used under 3.8.0)|
+| **Virtual Environment** | Recommended project root directory `.venv/`|
+| **Dependencies** | See `requirements.txt`（pandas, numpy, xgboost, scikit-learn, lime, matplotlib, seaborn, ucimlrepo） |
 
-安装：
+Install:
 
 ```bash
 pip install -r requirements.txt
@@ -69,44 +69,44 @@ pip install -r requirements.txt
 
 ---
 
-## 4. 关键实现与训练细节（Implementation & Training）
+## 4. key Implementation & Training Deatils
 
 ### 4.1 XGBoost（Step 1）
 
-- 各类数据集共用 `preprocess_utils._build_xgb()` 中参数（`n_estimators=600`, `max_depth=15`, `learning_rate=0.02` 等）。  
-- 在 **完整训练集** 上 `fit` 一次（与部分论文实现中“每折重训黑盒”不同，若需严格对齐可改为 CV 内重训）。
+- Each datasets share the same parameters in `preprocess_utils._build_xgb()`(`n_estimators=600`, `max_depth=15`, `learning_rate=0.02` etc).
+- Fit once on the **complete training set** (unlike the "retraining black box per fold" implementation in some papers, if strict alignment is required, it can be changed to retraining within the CV).
 
-### 4.2 数值特征：MDLP 离散化
+### 4.2 Numerical characteristics: MDLP discretization
 
-- 实现：`src/data_processing/mdlp_discretizer.py`（Fayyad & Irani 风格 MDLP）。  
-- 典型参数：`min_depth=1`, `max_depth=6`, `min_samples=10`。  
-- **无数值列** 的数据集（如 voting 全离散）：`preprocess_utils` 仅做 one-hot，**不进行 MDLP**。
+- Implementation：`src/data_processing/mdlp_discretizer.py`(Fayyad & Irani style MDLP).
+- Typical parameters：`min_depth=1`, `max_depth=6`, `min_samples=10`.  
+- For datasets with **no numerical columns** (such as fully discrete voting datasets): `preprocess_utils` performs only one-hot encoding and **does not perform MDLP**.
 
-### 4.3 LIME（Algorithm 4 前半）
+### 4.3 LIME（Algorithm 4 First Half）
 
-- `lime.lime_tabular.LimeTabularExplainer`，`discretize_continuous=False`，特征按 categorical 处理。  
-- 默认 `num_features=5`, `num_samples=5000`（可在 `run_heart_experiment.py` 用 `--num-features` 调整）。  
-- 解释写入 `results/models/{dataset}_lime_explanations.pkl`。
+- `lime.lime_tabular.LimeTabularExplainer`，`discretize_continuous=False`，Features are processed by categorical.  
+- Default values ​​are `num_features=5` and `num_samples=5000` (which can be adjusted using `--num-features` in `run_heart_experiment.py`).
+- Interpretation writing `results/models/{dataset}_lime_explanations.pkl`.
 
 ### 4.4 Dataset Transformation + FOLD
 
-- **E+/E−**：由 **模型预测标签** `M(r)` 构造（非仅真实标签）。  
-- **BK**：由 LIME 的 `feature_weights_by_class[1]`（正类）与样本特征值生成 literal；**正/负权重均保留**（不按符号丢弃）。  
-- **interval / binary**：由 `feature_meta.json` 中 `interval_features` 与列取值判定。  
-- **FOLD**：`max_rule_length=5`，目标谓词见各数据集 `target_predicate`（如 `heart_disease`, `wine_target`, `voting_target`）。
+- **E+/E−**：Constructed from **model-predicted labels** `M(r)` (not just the true labels). 
+- **BK**：The literal is generated from LIME’s `feature_weights_by_class[1]` (positive class) and the sample feature values; **positive/negative weights are retained** (not discarded according to their signs).
+- **interval / binary**：The value is determined by the `interval_features` parameter in `feature_meta.json` and the column values. 
+- **FOLD**：`max_rule_length=5`，The target predicates are available in each dataset `target_predicate`（如 `heart_disease`, `wine_target`, `voting_target`）。
 
-### 4.5 图表
+### 4.5 Figure
 
-- **不生成** 论文 Figure 3 类 XGBoost 全局特征重要性图（当前默认关闭）。  
-- 对比图：`results/figures/{dataset}_experiment_comparison.png`，规则数柱顶标注 **两位小数**，便于与论文 Figure 2 中小数规则数对照。
+- **NOT generate** Figure 3 in the paper shows the global feature importance map for each class in XGBoost (currently disabled by default).。  
+- Comparison Figures：`results/figures/{dataset}_experiment_comparison.png`，The column number is labeled with **two decimal places** for easy comparison with the decimal column numbers in Figure 2 of the paper.
 
 ---
 
-## 5. 与论文数值差异的常见原因
+## 5. Common reasons for discrepancies between numerical values ​​and those in the paper
 
-- XGBoost / LIME / FOLD 实现与原作者 Java+Prolog 栈不完全一致；  
-- **Wine 二分类 vs 论文多类** 导致指标与规则数不可直接等同；  
-- 5-fold 随机种子与单次划分波动；  
-- MDLP 与剪枝阈值等工程参数。
+- The XGBoost/LIME/FOLD implementations are not entirely consistent with the original author's Java+Prolog stack；  
+- **Binary classification of wine vs. multi-class classification of papers** This means that indicators and the number of rules cannot be directly equated.；  
+- 5-fold Random seed and single partition fluctuation；  
+- MDLP and engineering parameters such as pruning threshold.
 
-更完整的讨论见项目内实验日志与 `results/logs/*.csv`。
+For a more complete discussion, please see the project's experimental log and `results/logs/*.csv`。
